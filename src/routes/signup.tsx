@@ -3,6 +3,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { MarketingLayout } from "@/components/MarketingLayout";
 import { categories } from "@/lib/data";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/signup")({
   head: () => ({
@@ -31,6 +32,7 @@ function SignUp() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
   const navigate = useNavigate();
 
   const toggleSkill = (s: string) =>
@@ -85,9 +87,8 @@ function SignUp() {
         return;
       }
 
-      setSuccess(
-        "Account created. Please check your email for a verification link before signing in.",
-      );
+      setSuccess("Account created. Please check your email for a verification link before signing in.");
+      setShowVerificationModal(true);
     } catch (submitError) {
       setError(
         submitError instanceof Error
@@ -101,22 +102,26 @@ function SignUp() {
 
   return (
     <MarketingLayout>
-      <div className="mx-auto max-w-xl px-4 py-14 sm:px-6">
-        <h1 className="font-display text-3xl font-extrabold">Create your account</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Free to join. It takes about two minutes.
-        </p>
+      <div className="relative overflow-hidden bg-[radial-gradient(circle_at_top_left,_rgba(45,106,79,0.16),_transparent_35%),linear-gradient(180deg,_rgba(248,249,250,1),_rgba(234,241,236,1))]">
+        <div className="absolute -left-12 top-12 h-56 w-56 rounded-full bg-primary/10 blur-3xl" />
+        <div className="absolute right-0 top-24 h-64 w-64 rounded-full bg-secondary/20 blur-3xl" />
+        <div className="relative mx-auto max-w-xl px-4 py-14 sm:px-6">
+          <div className="card-surface border-primary/10 bg-white/80 p-6 shadow-[0_18px_50px_rgba(16,24,40,0.08)] backdrop-blur-sm sm:p-8">
+            <h1 className="font-display text-3xl font-extrabold">Create your account</h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Free to join. It takes about two minutes.
+            </p>
 
-        <div className="mt-6 grid grid-cols-2 gap-2 rounded-xl bg-muted p-1">
-          <RoleTab active={role === "member"} onClick={() => setRole("member")}>
-            🙋🏽 I need help
-          </RoleTab>
-          <RoleTab active={role === "worker"} onClick={() => setRole("worker")}>
-            🧰 I want to work
-          </RoleTab>
-        </div>
+            <div className="mt-6 grid grid-cols-2 gap-2 rounded-xl bg-muted p-1">
+              <RoleTab active={role === "member"} onClick={() => setRole("member")}>
+                🙋🏽 I need help
+              </RoleTab>
+              <RoleTab active={role === "worker"} onClick={() => setRole("worker")}>
+                🧰 I want to work
+              </RoleTab>
+            </div>
 
-        <form className="card-surface mt-6 space-y-5 p-6" onSubmit={handleSubmit}>
+            <form className="mt-6 space-y-5" onSubmit={handleSubmit}>
           {error ? <p className="text-sm text-red-600">{error}</p> : null}
           {success ? <p className="text-sm text-green-700">{success}</p> : null}
 
@@ -215,8 +220,32 @@ function SignUp() {
               Log in
             </Link>
           </p>
-        </form>
+            </form>
+          </div>
+        </div>
       </div>
+
+      {showVerificationModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="card-surface max-w-md space-y-4 p-6 text-center">
+            <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-accent text-2xl">✉️</div>
+            <h3 className="font-display text-2xl font-bold">Check your email</h3>
+            <p className="text-sm text-muted-foreground">
+              We sent a verification link to your email. Please open it, then sign in to continue.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setShowVerificationModal(false);
+                navigate({ to: "/login" });
+              }}
+              className="btn-primary w-full"
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
     </MarketingLayout>
   );
 }

@@ -78,7 +78,7 @@ function Settings() {
     addPaymentMethod(newMethod);
     setNewPayment({ cardName: "", cardNumber: "", cvv: "", expiry: "" });
     setShowAddPayment(false);
-    toast.success("Payment method added successfully");
+    toast.success("Card added successfully");
   };
 
   const handleRemovePayment = (id: string) => {

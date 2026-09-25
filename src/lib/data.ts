@@ -14,6 +14,7 @@ export type Job = {
   urgent: boolean;
   status: JobStatus;
   applicants: Applicant[];
+  photos?: string[];
 };
 
 export type Applicant = {

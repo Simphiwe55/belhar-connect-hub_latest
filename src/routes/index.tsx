@@ -54,7 +54,7 @@ function Home() {
               title="I want to work"
               body="Browse paid jobs close to home, apply instantly and build your rating and income."
               cta="Find Jobs"
-              to="/worker/find-jobs"
+              to="/signup"
             />
           </div>
 
@@ -105,7 +105,7 @@ function Home() {
             {categories.map((c) => (
               <Link
                 key={c}
-                to="/worker/find-jobs"
+                to="/signup"
                 className="card-surface flex flex-col items-start gap-2 p-5 transition-shadow hover:shadow-[var(--shadow-lift)]"
               >
                 <span className="text-2xl" aria-hidden="true">

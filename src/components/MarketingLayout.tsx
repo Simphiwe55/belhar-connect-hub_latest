@@ -45,9 +45,9 @@ export function SiteFooter() {
         <FooterCol
           title="For Workers"
           links={[
-            ["Find jobs", "/worker/find-jobs"],
-            ["My applications", "/worker/applications"],
-            ["Earnings", "/earnings"],
+            ["Find jobs", "/signup"],
+            ["My applications", "/signup"],
+            ["Earnings", "/signup"],
           ]}
         />
       </div>

@@ -49,6 +49,7 @@ function PostJob() {
     return draft || INITIAL_FORM_STATE;
   });
   const [loading, setLoading] = useState(false);
+  const [uploadedPhotos, setUploadedPhotos] = useState<string[]>([]);
   const [errors, setErrors] = useState<Partial<Record<keyof JobFormData, string>>>({});
 
   const validateForm = (): boolean => {
@@ -86,8 +87,33 @@ function PostJob() {
     }
   };
 
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    if (!files.length) return;
+
+    const fileReaders = files.map(
+      (file) =>
+        new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result ?? ""));
+          reader.onerror = () => reject(new Error(`Failed to read ${file.name}`));
+          reader.readAsDataURL(file);
+        }),
+    );
+
+    Promise.all(fileReaders)
+      .then((results) => {
+        setUploadedPhotos((prev) => [...prev, ...results].slice(0, 5));
+      })
+      .catch(() => {
+        toast.error("One or more photos could not be added. Please try again.");
+      });
+
+    e.target.value = "";
+  };
+
   const handleSaveDraft = () => {
-    saveDraft("current-job", formData);
+    saveDraft("current-job", { ...formData, photos: uploadedPhotos });
     toast.success("Job draft saved successfully");
   };
 
@@ -123,11 +149,13 @@ function PostJob() {
         urgent: formData.urgent,
         status: "Open",
         applicants: [],
+        photos: uploadedPhotos,
       };
 
       addJob(newJob);
       toast.success("Job posted successfully!");
       removeDraft("current-job");
+      setUploadedPhotos([]);
       setFormData(INITIAL_FORM_STATE);
       navigate({ to: "/member/jobs" });
     } catch (error) {
@@ -219,22 +247,31 @@ function PostJob() {
           />
         </L>
         <L label="Photos (optional)">
-          <div className="grid h-32 place-items-center rounded-xl border-2 border-dashed border-border text-center text-sm text-muted-foreground">
-            <div>
-              <input
-                type="file"
-                multiple
-                accept="image/*"
-                className="hidden"
-                id="photos"
-                disabled
-              />
-              <label htmlFor="photos" className="cursor-pointer">
-                📷
-                <div>Tap to upload photos of the job</div>
-                <div className="text-xs">(Coming soon)</div>
-              </label>
-            </div>
+          <div className="rounded-xl border-2 border-dashed border-border bg-muted/40 p-3 text-sm text-muted-foreground">
+            <input
+              type="file"
+              multiple
+              accept="image/*"
+              className="hidden"
+              id="photos"
+              onChange={handlePhotoChange}
+            />
+            <label htmlFor="photos" className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-surface p-4 text-center">
+              <span className="text-2xl">📷</span>
+              <span>{uploadedPhotos.length ? `${uploadedPhotos.length} photo(s) selected` : "Tap to upload photos of the job"}</span>
+            </label>
+            {uploadedPhotos.length > 0 && (
+              <div className="mt-3 grid grid-cols-3 gap-2">
+                {uploadedPhotos.map((photo, index) => (
+                  <img
+                    key={`${photo}-${index}`}
+                    src={photo}
+                    alt={`Job upload ${index + 1}`}
+                    className="h-20 w-full rounded-lg object-cover"
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </L>
 

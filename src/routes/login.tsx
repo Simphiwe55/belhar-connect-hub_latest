@@ -2,6 +2,7 @@ import { useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { MarketingLayout } from "@/components/MarketingLayout";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -26,6 +27,10 @@ function Login() {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
+
+  const handleSocialSignIn = (provider: "Google" | "Facebook") => {
+    toast.info(`${provider} sign-in is coming soon. Please use your email and password for now.`);
+  };
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -83,27 +88,31 @@ function Login() {
 
   return (
     <MarketingLayout>
-      <div className="mx-auto max-w-md px-4 py-16 sm:px-6">
-        <h1 className="font-display text-3xl font-extrabold">Welcome back</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Log in to continue on Connectly.</p>
+      <div className="relative overflow-hidden bg-[radial-gradient(circle_at_top_left,_rgba(45,106,79,0.16),_transparent_35%),linear-gradient(180deg,_rgba(248,249,250,1),_rgba(240,244,239,1))]">
+        <div className="absolute -left-20 top-12 h-56 w-56 rounded-full bg-primary/10 blur-3xl" />
+        <div className="absolute right-0 top-24 h-64 w-64 rounded-full bg-secondary/20 blur-3xl" />
+        <div className="relative mx-auto max-w-md px-4 py-16 sm:px-6">
+          <div className="card-surface border-primary/10 bg-white/80 p-6 backdrop-blur-sm shadow-[0_18px_50px_rgba(16,24,40,0.08)] sm:p-8">
+            <h1 className="font-display text-3xl font-extrabold">Welcome back</h1>
+            <p className="mt-2 text-sm text-muted-foreground">Log in to continue on Connectly.</p>
 
-        <div className="mt-6 grid grid-cols-2 gap-2 rounded-xl bg-muted p-1">
-          {(["member", "worker"] as const).map((r) => (
-            <button
-              key={r}
-              onClick={() => setRole(r)}
-              className={`h-11 rounded-lg text-sm font-semibold transition-colors ${
-                role === r
-                  ? "bg-surface text-primary shadow-[var(--shadow-card)]"
-                  : "text-muted-foreground"
-              }`}
-            >
-              {r === "member" ? "Community Member" : "Worker"}
-            </button>
-          ))}
-        </div>
+            <div className="mt-6 grid grid-cols-2 gap-2 rounded-xl bg-muted p-1">
+              {(["member", "worker"] as const).map((r) => (
+                <button
+                  key={r}
+                  onClick={() => setRole(r)}
+                  className={`h-11 rounded-lg text-sm font-semibold transition-colors ${
+                    role === r
+                      ? "bg-surface text-primary shadow-[var(--shadow-card)]"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  {r === "member" ? "Community Member" : "Worker"}
+                </button>
+              ))}
+            </div>
 
-        <form className="card-surface mt-6 space-y-5 p-6" onSubmit={handleSubmit}>
+            <form className="mt-6 space-y-5" onSubmit={handleSubmit}>
           <label className="block">
             <span className="mb-1.5 block text-sm font-semibold">Email or phone</span>
             <input
@@ -147,10 +156,18 @@ function Login() {
             <span className="h-px flex-1 bg-border" />
           </div>
           <div className="grid gap-2 sm:grid-cols-2">
-            <button type="button" className="btn-secondary w-full !text-foreground">
+            <button
+              type="button"
+              className="btn-secondary w-full !text-foreground"
+              onClick={() => handleSocialSignIn("Google")}
+            >
               Google
             </button>
-            <button type="button" className="btn-secondary w-full !text-foreground">
+            <button
+              type="button"
+              className="btn-secondary w-full !text-foreground"
+              onClick={() => handleSocialSignIn("Facebook")}
+            >
               Facebook
             </button>
           </div>
@@ -161,7 +178,9 @@ function Login() {
               Create an account
             </Link>
           </p>
-        </form>
+            </form>
+          </div>
+        </div>
       </div>
     </MarketingLayout>
   );
