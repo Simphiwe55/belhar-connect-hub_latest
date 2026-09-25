@@ -88,9 +88,9 @@ function Login() {
 
   return (
     <MarketingLayout>
-      <div className="relative overflow-hidden bg-[radial-gradient(circle_at_top_left,_rgba(45,106,79,0.16),_transparent_35%),linear-gradient(180deg,_rgba(248,249,250,1),_rgba(240,244,239,1))]">
-        <div className="absolute -left-20 top-12 h-56 w-56 rounded-full bg-primary/10 blur-3xl" />
-        <div className="absolute right-0 top-24 h-64 w-64 rounded-full bg-secondary/20 blur-3xl" />
+      <div className="relative overflow-hidden bg-[linear-gradient(150deg,var(--primary),var(--primary-dark))]">
+        <div className="absolute -left-20 top-12 h-56 w-56 rounded-full bg-white/10 blur-3xl" />
+        <div className="absolute right-0 top-24 h-64 w-64 rounded-full bg-secondary/25 blur-3xl" />
         <div className="relative mx-auto max-w-md px-4 py-16 sm:px-6">
           <div className="card-surface border-primary/10 bg-white/80 p-6 backdrop-blur-sm shadow-[0_18px_50px_rgba(16,24,40,0.08)] sm:p-8">
             <h1 className="font-display text-3xl font-extrabold">Welcome back</h1>
