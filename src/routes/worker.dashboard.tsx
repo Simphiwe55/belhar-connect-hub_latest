@@ -27,6 +27,9 @@ function WorkerDashboard() {
   const wallet = readWorkerWallet();
   const openJobs = jobs.filter((job) => job.status === "Open").slice(0, 4);
   const completedJobsCount = jobs.filter((job) => job.status === "Completed").length;
+  const averageJobRating = jobs.length
+    ? (jobs.reduce((sum, job) => sum + job.clientRating, 0) / jobs.length).toFixed(1)
+    : "0.0";
   const applicationSummary = [
     ["Applied", Math.max(applied.length, 0)],
     ["Shortlisted", jobs.filter((job) => job.status === "In Progress").length],
@@ -89,7 +92,12 @@ function WorkerDashboard() {
           className="card-surface text-left transition-colors hover:bg-muted"
         >
           <div className="p-5">
-            <StatCard label="Rating" value="4.9★" hint="From 41 reviews" icon="⭐" />
+            <StatCard
+              label="Rating"
+              value={`${averageJobRating}★`}
+              hint={`From ${jobs.length} jobs`}
+              icon="⭐"
+            />
           </div>
         </button>
       </div>
