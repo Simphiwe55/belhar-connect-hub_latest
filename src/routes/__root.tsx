@@ -6,11 +6,13 @@ import {
   useRouter,
   HeadContent,
   Scripts,
+  redirect,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { supabase } from "@/integrations/supabase/client";
 
 function NotFoundComponent() {
   return (
@@ -74,6 +76,54 @@ function ErrorComponent({ error, reset }: { error: unknown; reset: () => void })
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+  beforeLoad: async ({ location }) => {
+    const publicPaths = new Set(["/", "/about", "/login", "/signup"]);
+    const pathname = location.pathname;
+
+    if (publicPaths.has(pathname)) {
+      const { data: userData } = await supabase.auth.getUser();
+      const user = userData.user;
+
+      if (user) {
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        const target = profileData?.role === "worker" ? "/worker/dashboard" : "/member/dashboard";
+
+        if (pathname === "/login" || pathname === "/signup") {
+          throw redirect({ to: target, replace: true });
+        }
+      }
+
+      return;
+    }
+
+    const { data: userData, error } = await supabase.auth.getUser();
+    if (error || !userData.user) {
+      throw redirect({ to: "/login", replace: true });
+    }
+
+    const { data: profileData } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", userData.user.id)
+      .maybeSingle();
+
+    if (!profileData?.role) {
+      throw redirect({ to: "/login", replace: true });
+    }
+
+    if (pathname.startsWith("/member") && profileData.role !== "member") {
+      throw redirect({ to: "/worker/dashboard", replace: true });
+    }
+
+    if (pathname.startsWith("/worker") && profileData.role !== "worker") {
+      throw redirect({ to: "/member/dashboard", replace: true });
+    }
+  },
   head: () => ({
     meta: [
       { charSet: "utf-8" },
