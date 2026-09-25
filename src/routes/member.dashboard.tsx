@@ -3,6 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { JobCard, StatCard, Section } from "@/components/ui-kit";
 import { categories, categoryEmoji } from "@/lib/data";
+import { useProfile } from "@/lib/auth";
 import { useJobs } from "@/lib/hooks";
 
 export const Route = createFileRoute("/member/dashboard")({
@@ -23,13 +24,16 @@ export const Route = createFileRoute("/member/dashboard")({
 function MemberDashboard() {
   const [cat, setCat] = useState<string>("All");
   const { jobs } = useJobs();
+  const { profile } = useProfile();
+  const displayName = profile?.full_name?.trim() || "Member";
+  const firstName = displayName.split(" ")[0] || "Member";
   const list = cat === "All" ? jobs : jobs.filter((j) => j.category === cat);
 
   return (
     <AppShell
       role="member"
-      title="Goeie dag, Fatima 👋"
-      subtitle="Belhar Ext 15, Cape Town"
+      title={`Good day, ${firstName} 👋`}
+      subtitle={profile?.location ? `Community Member · ${profile.location}` : "Your dashboard"}
       action={
         <Link to="/member/post-job" className="btn-primary">
           ➕ Post a New Job
