@@ -1,8 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { JobCard, StatCard, Section } from "@/components/ui-kit";
-import { useAvailability, useJobs } from "@/lib/hooks";
-import { useNavigate } from "@tanstack/react-router";
+import { useApplications, useAvailability, useJobs } from "@/lib/hooks";
+import { formatCurrency, readWorkerWallet } from "@/lib/worker-wallet";
 
 export const Route = createFileRoute("/worker/dashboard")({
   head: () => ({
@@ -23,7 +23,15 @@ function WorkerDashboard() {
   const { available, toggleAvailability } = useAvailability();
   const navigate = useNavigate();
   const { jobs } = useJobs();
-  const openJobs = jobs.filter((j) => j.status === "Open").slice(0, 4);
+  const { applied } = useApplications();
+  const wallet = readWorkerWallet();
+  const openJobs = jobs.filter((job) => job.status === "Open").slice(0, 4);
+  const applicationSummary = [
+    ["Applied", Math.max(applied.length, 2)],
+    ["Shortlisted", 1],
+    ["Hired", 1],
+    ["Rejected", 1],
+  ];
 
   return (
     <AppShell
@@ -67,7 +75,7 @@ function WorkerDashboard() {
           className="card-surface text-left transition-colors hover:bg-muted"
         >
           <div className="p-5">
-            <StatCard label="Total earned" value="R23 850" hint="R3 630 this week" icon="💰" />
+            <StatCard label="Total earned" value={formatCurrency(wallet.totalEarned)} hint="Available to withdraw" icon="💰" />
           </div>
         </button>
         <button
@@ -90,14 +98,14 @@ function WorkerDashboard() {
       >
         {openJobs.length > 0 ? (
           <div className="grid gap-4 lg:grid-cols-2">
-            {openJobs.map((j) => (
+            {openJobs.map((job) => (
               <Link
-                key={j.id}
+                key={job.id}
                 to="/worker/job/$jobId"
-                params={{ jobId: j.id }}
-                className="transition-transform hover:scale-105"
+                params={{ jobId: job.id }}
+                className="transition-transform hover:scale-[1.01]"
               >
-                <JobCard job={j} view="worker" />
+                <JobCard job={job} view="worker" />
               </Link>
             ))}
           </div>
@@ -117,16 +125,11 @@ function WorkerDashboard() {
         }
       >
         <div className="grid gap-4 sm:grid-cols-4">
-          {[
-            ["Applied", 2],
-            ["Shortlisted", 1],
-            ["Hired", 1],
-            ["Rejected", 1],
-          ].map(([label, n]) => (
+          {applicationSummary.map(([label, n]) => (
             <button
               key={label as string}
               onClick={() => navigate({ to: "/worker/applications" })}
-              className="card-surface p-5 transition-colors hover:bg-muted"
+              className="card-surface p-5 text-left transition-colors hover:bg-muted"
             >
               <div className="font-display text-2xl font-bold">{n}</div>
               <div className="text-sm text-muted-foreground">{label}</div>

@@ -1,22 +1,10 @@
-<<<<<<< HEAD
 import { useMemo, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
-import { AppShell } from "@/components/AppShell";
-import { StatCard } from "@/components/ui-kit";
-import {
-  defaultWorkerWallet,
-  formatCurrency,
-  readWorkerWallet,
-  withdrawWorkerEarnings,
-} from "@/lib/worker-wallet";
-=======
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { StatCard } from "@/components/ui-kit";
-import { rand, transactions, weeklyEarnings } from "@/lib/data";
+import { formatCurrency, readWorkerWallet, withdrawWorkerEarnings } from "@/lib/worker-wallet";
 import { usePaymentMethods } from "@/lib/hooks";
 import { toast } from "sonner";
->>>>>>> 8e5bef0306aedb51ca45cb035d9eeec90432549b
 
 export const Route = createFileRoute("/earnings")({
   head: () => ({
@@ -34,11 +22,12 @@ export const Route = createFileRoute("/earnings")({
 });
 
 function Earnings() {
-<<<<<<< HEAD
   const [wallet, setWallet] = useState(() => readWorkerWallet());
-  const [amount, setAmount] = useState("2730");
+  const [amount, setAmount] = useState(String(readWorkerWallet().availableToWithdraw));
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const { methods } = usePaymentMethods();
+  const defaultMethod = methods.find((method) => method.isDefault) ?? methods[0];
 
   const weeklyValues = useMemo(
     () => [
@@ -61,27 +50,25 @@ function Earnings() {
     setError(null);
     setSuccess(null);
 
+    if (!defaultMethod) {
+      const message = "Add a payment method in Settings before withdrawing.";
+      setError(message);
+      toast.error(message);
+      return;
+    }
+
     try {
       const nextWallet = withdrawWorkerEarnings(numericAmount);
       setWallet(nextWallet);
       setAmount(String(Math.max(nextWallet.availableToWithdraw, 0)));
-      setSuccess(`Withdrawal of ${formatCurrency(numericAmount)} is moving to your ${nextWallet.cardBrand} card ending in ${nextWallet.cardLast4}.`);
+      const message = `Withdrawal of ${formatCurrency(numericAmount)} is moving to your ${nextWallet.cardBrand} card ending in ${nextWallet.cardLast4}.`;
+      setSuccess(message);
+      toast.success(message);
     } catch (withdrawError) {
-      setError(withdrawError instanceof Error ? withdrawError.message : "Withdrawal failed.");
+      const message = withdrawError instanceof Error ? withdrawError.message : "Withdrawal failed.";
+      setError(message);
+      toast.error(message);
     }
-=======
-  const max = Math.max(...weeklyEarnings.map((d) => d.amount));
-  const week = weeklyEarnings.reduce((s, d) => s + d.amount, 0);
-  const { methods } = usePaymentMethods();
-  const defaultMethod = methods.find((method) => method.isDefault) ?? methods[0];
-
-  const handleWithdraw = () => {
-    if (!defaultMethod) {
-      toast.error("Add a payment method in Settings before withdrawing.");
-      return;
-    }
-    toast.success(`Withdrawal requested to ${defaultMethod.name}.`);
->>>>>>> 8e5bef0306aedb51ca45cb035d9eeec90432549b
   };
 
   return (
@@ -89,15 +76,11 @@ function Earnings() {
       role="worker"
       title="Earnings"
       subtitle="Paid out every Friday"
-<<<<<<< HEAD
       action={
         <button className="btn-primary" onClick={handleWithdraw} type="button">
           Withdraw Earnings
         </button>
       }
-=======
-      action={<button onClick={handleWithdraw} className="btn-primary">Withdraw Earnings</button>}
->>>>>>> 8e5bef0306aedb51ca45cb035d9eeec90432549b
     >
       <div className="grid gap-4 sm:grid-cols-3">
         <StatCard label="Total earned" value={formatCurrency(wallet.totalEarned)} hint="Since March 2026" icon="💰" />
@@ -105,7 +88,20 @@ function Earnings() {
         <StatCard label="Available to withdraw" value={formatCurrency(wallet.availableToWithdraw)} hint="Cleared funds" icon="🏦" />
       </div>
 
-<<<<<<< HEAD
+      <div className="card-surface p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="font-display text-lg font-bold">Payout method</h2>
+            <p className="text-sm text-muted-foreground">
+              {defaultMethod ? `${defaultMethod.name} · ${defaultMethod.details}` : "No payment method added yet."}
+            </p>
+          </div>
+          <Link to="/settings" className="btn-secondary !h-10 !px-4 !text-sm">
+            Manage payment methods
+          </Link>
+        </div>
+      </div>
+
       <div className="grid gap-4 lg:grid-cols-[1.4fr_0.9fr]">
         <div className="card-surface p-6">
           <h2 className="font-display text-lg font-bold">This week</h2>
@@ -135,35 +131,6 @@ function Earnings() {
             <div className="mt-6 flex items-center justify-between text-sm text-emerald-100">
               <span>{wallet.cardHolder}</span>
               <span>•••• {wallet.cardLast4}</span>
-=======
-      <div className="card-surface p-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="font-display text-lg font-bold">Payout method</h2>
-            <p className="text-sm text-muted-foreground">
-              {defaultMethod ? `${defaultMethod.name} · ${defaultMethod.details}` : "No payment method added yet."}
-            </p>
-          </div>
-          <Link to="/settings" className="btn-secondary !h-10 !px-4 !text-sm">
-            Manage payment methods
-          </Link>
-        </div>
-      </div>
-
-      <div className="card-surface p-6">
-        <h2 className="font-display text-lg font-bold">This week</h2>
-        <div className="mt-6 flex h-48 items-end gap-3">
-          {weeklyEarnings.map((d) => (
-            <div key={d.day} className="flex flex-1 flex-col items-center gap-2">
-              <span className="text-xs font-semibold text-muted-foreground">
-                {d.amount ? rand(d.amount) : ""}
-              </span>
-              <div
-                className="w-full rounded-t-lg bg-[linear-gradient(180deg,var(--primary),var(--primary-dark))]"
-                style={{ height: `${max ? (d.amount / max) * 100 : 0}%`, minHeight: 4 }}
-              />
-              <span className="text-xs text-muted-foreground">{d.day}</span>
->>>>>>> 8e5bef0306aedb51ca45cb035d9eeec90432549b
             </div>
           </div>
 
