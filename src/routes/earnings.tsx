@@ -28,6 +28,14 @@ function Earnings() {
   const [success, setSuccess] = useState<string | null>(null);
   const { methods } = usePaymentMethods();
   const defaultMethod = methods.find((method) => method.isDefault) ?? methods[0];
+  const activePaymentMethod =
+    defaultMethod ?? {
+      id: "worker-card",
+      type: "card" as const,
+      name: wallet.cardBrand,
+      details: `•••• ${wallet.cardLast4}`,
+      isDefault: true,
+    };
 
   const weeklyValues = useMemo(
     () => [
@@ -49,13 +57,6 @@ function Earnings() {
     const numericAmount = Number(amount);
     setError(null);
     setSuccess(null);
-
-    if (!defaultMethod) {
-      const message = "Add a payment method in Settings before withdrawing.";
-      setError(message);
-      toast.error(message);
-      return;
-    }
 
     try {
       const nextWallet = withdrawWorkerEarnings(numericAmount);
@@ -93,7 +94,7 @@ function Earnings() {
           <div>
             <h2 className="font-display text-lg font-bold">Payout method</h2>
             <p className="text-sm text-muted-foreground">
-              {defaultMethod ? `${defaultMethod.name} · ${defaultMethod.details}` : "No payment method added yet."}
+              {activePaymentMethod ? `${activePaymentMethod.name} · ${activePaymentMethod.details}` : "No payment method added yet."}
             </p>
           </div>
           <Link to="/settings" className="btn-secondary !h-10 !px-4 !text-sm">

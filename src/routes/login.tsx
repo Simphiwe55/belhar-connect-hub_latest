@@ -20,6 +20,9 @@ export const Route = createFileRoute("/login")({
 
 function Login() {
   const [role, setRole] = useState<"member" | "worker">("member");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   return (
@@ -48,17 +51,43 @@ function Login() {
           className="card-surface mt-6 space-y-5 p-6"
           onSubmit={(e) => {
             e.preventDefault();
+
+            const trimmedEmail = email.trim();
+            const trimmedPassword = password.trim();
+
+            if (!trimmedEmail || !trimmedPassword) {
+              setError("Please enter both your email/phone and password.");
+              return;
+            }
+
+            setError(null);
             navigate({ to: role === "member" ? "/member/dashboard" : "/worker/dashboard" });
           }}
         >
           <label className="block">
             <span className="mb-1.5 block text-sm font-semibold">Email or phone</span>
-            <input className="field" placeholder="you@example.co.za or 072 123 4567" />
+            <input
+              className="field"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="you@example.co.za or 072 123 4567"
+              aria-invalid={Boolean(error)}
+              required
+            />
           </label>
           <label className="block">
             <span className="mb-1.5 block text-sm font-semibold">Password</span>
-            <input className="field" type="password" placeholder="••••••••" />
+            <input
+              className="field"
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              placeholder="••••••••"
+              aria-invalid={Boolean(error)}
+              required
+            />
           </label>
+          {error ? <p className="text-sm text-red-600">{error}</p> : null}
           <div className="flex items-center justify-between text-sm">
             <label className="flex items-center gap-2 text-muted-foreground">
               <input type="checkbox" className="h-4 w-4 accent-[var(--primary)]" /> Remember me
