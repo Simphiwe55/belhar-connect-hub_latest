@@ -128,3 +128,7 @@ cd <repository-name>
 npm i
 npm run dev
 ```
+
+## 8. Group notes
+- I have added my code just awaiting group leader to accept it
+- 
