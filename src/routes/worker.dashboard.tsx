@@ -99,14 +99,21 @@ function WorkerDashboard() {
         {openJobs.length > 0 ? (
           <div className="grid gap-4 lg:grid-cols-2">
             {openJobs.map((job) => (
-              <Link
+              <div
                 key={job.id}
-                to="/worker/job/$jobId"
-                params={{ jobId: job.id }}
-                className="transition-transform hover:scale-[1.01]"
+                className="cursor-pointer transition-transform hover:scale-[1.01]"
+                onClick={() => navigate({ to: "/worker/job/$jobId", params: { jobId: job.id } })}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    navigate({ to: "/worker/job/$jobId", params: { jobId: job.id } });
+                  }
+                }}
+                role="link"
+                tabIndex={0}
               >
                 <JobCard job={job} view="worker" />
-              </Link>
+              </div>
             ))}
           </div>
         ) : (
