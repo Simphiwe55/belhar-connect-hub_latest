@@ -2,6 +2,7 @@ import { useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { MarketingLayout } from "@/components/MarketingLayout";
 import { categories } from "@/lib/data";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/signup")({
   head: () => ({
@@ -22,10 +23,81 @@ export const Route = createFileRoute("/signup")({
 function SignUp() {
   const [role, setRole] = useState<"member" | "worker">("member");
   const [skills, setSkills] = useState<string[]>(["Gardener"]);
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [location, setLocation] = useState("Belhar, Cape Town");
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
   const toggleSkill = (s: string) =>
     setSkills((cur) => (cur.includes(s) ? cur.filter((x) => x !== s) : [...cur, s]));
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const trimmedFullName = fullName.trim();
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password.trim();
+
+    if (!trimmedFullName || !trimmedEmail || !trimmedPassword) {
+      setError("Please fill in your full name, email and password.");
+      setSuccess(null);
+      return;
+    }
+
+    if (trimmedPassword.length < 6) {
+      setError("Password must be at least 6 characters long.");
+      setSuccess(null);
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      setError(null);
+      setSuccess(null);
+
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email: trimmedEmail,
+        password: trimmedPassword,
+        options: {
+          data: {
+            full_name: trimmedFullName,
+            phone: phone.trim(),
+            location: location.trim(),
+            role,
+            skills,
+          },
+          emailRedirectTo: `${window.location.origin}/login`,
+        },
+      });
+
+      if (signUpError) {
+        setError(signUpError.message);
+        return;
+      }
+
+      if (data.user && data.user.email_confirmed_at) {
+        navigate({ to: role === "member" ? "/member/dashboard" : "/worker/dashboard" });
+        return;
+      }
+
+      setSuccess(
+        "Account created. Please check your email for a verification link before signing in.",
+      );
+    } catch (submitError) {
+      setError(
+        submitError instanceof Error
+          ? submitError.message
+          : "Unable to create your account right now. Please try again.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   return (
     <MarketingLayout>
@@ -44,27 +116,51 @@ function SignUp() {
           </RoleTab>
         </div>
 
-        <form
-          className="card-surface mt-6 space-y-5 p-6"
-          onSubmit={(e) => {
-            e.preventDefault();
-            navigate({ to: role === "member" ? "/member/dashboard" : "/worker/dashboard" });
-          }}
-        >
+        <form className="card-surface mt-6 space-y-5 p-6" onSubmit={handleSubmit}>
+          {error ? <p className="text-sm text-red-600">{error}</p> : null}
+          {success ? <p className="text-sm text-green-700">{success}</p> : null}
+
           <Field label="Full name">
-            <input className="field" placeholder="e.g. Fatima Adams" defaultValue="" />
+            <input
+              className="field"
+              placeholder="e.g. Fatima Adams"
+              value={fullName}
+              onChange={(event) => setFullName(event.target.value)}
+            />
           </Field>
           <Field label="Email address">
-            <input className="field" type="email" placeholder="you@example.co.za" />
+            <input
+              className="field"
+              type="email"
+              placeholder="you@example.co.za"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+            />
           </Field>
           <Field label="Phone number">
-            <input className="field" type="tel" placeholder="072 123 4567" />
+            <input
+              className="field"
+              type="tel"
+              placeholder="072 123 4567"
+              value={phone}
+              onChange={(event) => setPhone(event.target.value)}
+            />
           </Field>
           <Field label="Password">
-            <input className="field" type="password" placeholder="At least 8 characters" />
+            <input
+              className="field"
+              type="password"
+              placeholder="At least 6 characters"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+            />
           </Field>
           <Field label="Location">
-            <input className="field" defaultValue="Belhar, Cape Town" />
+            <input
+              className="field"
+              value={location}
+              onChange={(event) => setLocation(event.target.value)}
+            />
           </Field>
 
           {role === "worker" && (
@@ -108,8 +204,10 @@ function SignUp() {
             </span>
           </label>
 
-          <button type="submit" className="btn-primary w-full">
-            Create {role === "member" ? "Community Member" : "Worker"} account
+          <button type="submit" className="btn-primary w-full" disabled={isSubmitting}>
+            {isSubmitting
+              ? "Creating account..."
+              : `Create ${role === "member" ? "Community Member" : "Worker"} account`}
           </button>
           <p className="text-center text-sm text-muted-foreground">
             Already have an account?{" "}

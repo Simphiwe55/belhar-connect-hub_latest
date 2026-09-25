@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { MarketingLayout } from "@/components/MarketingLayout";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -23,7 +24,54 @@ function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password.trim();
+
+    if (!trimmedEmail || !trimmedPassword) {
+      setError("Please enter both your email/phone and password.");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      setError(null);
+
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email: trimmedEmail,
+        password: trimmedPassword,
+      });
+
+      if (signInError) {
+        if (signInError.message.toLowerCase().includes("invalid login credentials")) {
+          setError("No account found for that email. Please create an account first.");
+        } else {
+          setError(signInError.message);
+        }
+        return;
+      }
+
+      if (!data.user) {
+        setError("No account found for that email. Please create an account first.");
+        return;
+      }
+
+      navigate({ to: role === "member" ? "/member/dashboard" : "/worker/dashboard" });
+    } catch (submitError) {
+      setError(
+        submitError instanceof Error
+          ? submitError.message
+          : "Unable to log in right now. Please try again.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   return (
     <MarketingLayout>
@@ -47,23 +95,7 @@ function Login() {
           ))}
         </div>
 
-        <form
-          className="card-surface mt-6 space-y-5 p-6"
-          onSubmit={(e) => {
-            e.preventDefault();
-
-            const trimmedEmail = email.trim();
-            const trimmedPassword = password.trim();
-
-            if (!trimmedEmail || !trimmedPassword) {
-              setError("Please enter both your email/phone and password.");
-              return;
-            }
-
-            setError(null);
-            navigate({ to: role === "member" ? "/member/dashboard" : "/worker/dashboard" });
-          }}
-        >
+        <form className="card-surface mt-6 space-y-5 p-6" onSubmit={handleSubmit}>
           <label className="block">
             <span className="mb-1.5 block text-sm font-semibold">Email or phone</span>
             <input
@@ -96,8 +128,10 @@ function Login() {
               Forgot password?
             </button>
           </div>
-          <button type="submit" className="btn-primary w-full">
-            Log in as {role === "member" ? "Community Member" : "Worker"}
+          <button type="submit" className="btn-primary w-full" disabled={isSubmitting}>
+            {isSubmitting
+              ? "Logging in..."
+              : `Log in as ${role === "member" ? "Community Member" : "Worker"}`}
           </button>
 
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
