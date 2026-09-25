@@ -24,6 +24,10 @@ function Settings() {
   const { profile } = useProfile();
   const signOut = useSignOut();
   const { preferences, updatePreferences } = useUserPreferences();
+  const profileName = profile?.full_name ?? "Your name";
+  const profileEmail = profile?.email ?? "your@email.com";
+  const profilePhone = profile?.phone ?? "No phone number added";
+  const profileLocation = profile?.location ?? "Belhar, Cape Town";
   const { methods, addPaymentMethod, removePaymentMethod, setDefault } = usePaymentMethods();
   const [showAddPayment, setShowAddPayment] = useState(false);
   const [newPayment, setNewPayment] = useState({ cardName: "", cardNumber: "", cvv: "", expiry: "" });
@@ -96,10 +100,10 @@ function Settings() {
         <div className="card-surface p-6">
           <h2 className="font-display text-lg font-bold">Account</h2>
           <div className="mt-4 space-y-3 text-sm">
-            <Row label="Name" value="Fatima Adams" />
-            <Row label="Email" value="fatima.adams@gmail.com" />
-            <Row label="Phone" value="072 418 9032" />
-            <Row label="Location" value="Belhar Ext 15, Cape Town" />
+            <Row label="Name" value={profileName} />
+            <Row label="Email" value={profileEmail} />
+            <Row label="Phone" value={profilePhone} />
+            <Row label="Location" value={profileLocation} />
           </div>
           <div className="mt-5 space-y-2">
             <Link to="/profile" className="btn-secondary w-full" title="Edit your profile information">

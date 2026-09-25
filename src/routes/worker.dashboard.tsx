@@ -29,6 +29,7 @@ function WorkerDashboard() {
   const wallet = readWorkerWallet();
   const displayName = profile?.full_name?.trim() || "Worker";
   const firstName = displayName.split(" ")[0] || "Worker";
+  const greetingName = firstName || "Friend";
   const openJobs = jobs.filter((job) => job.status === "Open").slice(0, 4);
   const completedJobsCount = jobs.filter((job) => job.status === "Completed").length;
   const averageJobRating = jobs.length
@@ -44,7 +45,7 @@ function WorkerDashboard() {
   return (
     <AppShell
       role="worker"
-      title={`Molo, ${firstName} 👋`}
+      title={`Good day, ${greetingName} 👋`}
       subtitle={profile?.location ? `Worker · ${profile.location}` : "Your dashboard"}
       action={
         <button
