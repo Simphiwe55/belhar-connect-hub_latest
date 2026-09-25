@@ -26,11 +26,12 @@ function WorkerDashboard() {
   const { applied } = useApplications();
   const wallet = readWorkerWallet();
   const openJobs = jobs.filter((job) => job.status === "Open").slice(0, 4);
+  const completedJobsCount = jobs.filter((job) => job.status === "Completed").length;
   const applicationSummary = [
-    ["Applied", Math.max(applied.length, 2)],
-    ["Shortlisted", 1],
-    ["Hired", 1],
-    ["Rejected", 1],
+    ["Applied", Math.max(applied.length, 0)],
+    ["Shortlisted", jobs.filter((job) => job.status === "In Progress").length],
+    ["Hired", completedJobsCount],
+    ["Rejected", 0],
   ];
 
   return (
@@ -67,7 +68,12 @@ function WorkerDashboard() {
           className="card-surface text-left transition-colors hover:bg-muted"
         >
           <div className="p-5">
-            <StatCard label="Completed jobs" value="47" hint="8 this month" icon="✅" />
+            <StatCard
+              label="Completed jobs"
+              value={String(completedJobsCount)}
+              hint={`${Math.max(applied.length, 0)} active applications`}
+              icon="✅"
+            />
           </div>
         </button>
         <button
