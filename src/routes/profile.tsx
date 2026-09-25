@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { Stars, Tag } from "@/components/ui-kit";
 import { reviews } from "@/lib/data";
 import { toast } from "sonner";
-import { useSignOut } from "@/lib/auth";
+import { useProfile, useSignOut } from "@/lib/auth";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
@@ -23,13 +23,20 @@ export const Route = createFileRoute("/profile")({
 
 function Profile() {
   const signOut = useSignOut();
+  const { profile } = useProfile();
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [showPasswordChange, setShowPasswordChange] = useState(false);
   const [editData, setEditData] = useState({
-    name: "Sipho Mthembu",
+    name: profile?.full_name ?? "Your name",
     about: "I've been doing garden and general maintenance work around Belhar and Bellville South for eight years. I bring my own tools, I'm on time, and I clean up properly before I leave. Available Monday to Saturday.",
   });
   const [password, setPassword] = useState({ current: "", new: "", confirm: "" });
+
+  useEffect(() => {
+    if (profile?.full_name) {
+      setEditData((current) => ({ ...current, name: profile.full_name ?? current.name }));
+    }
+  }, [profile?.full_name]);
 
   const handleSaveProfile = () => {
     if (!editData.name.trim()) {

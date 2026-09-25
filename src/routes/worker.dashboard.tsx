@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { JobCard, StatCard, Section } from "@/components/ui-kit";
+import { useProfile } from "@/lib/auth";
 import { useApplications, useAvailability, useJobs } from "@/lib/hooks";
 import { formatCurrency, readWorkerWallet } from "@/lib/worker-wallet";
 
@@ -24,7 +25,10 @@ function WorkerDashboard() {
   const navigate = useNavigate();
   const { jobs } = useJobs();
   const { applied } = useApplications();
+  const { profile } = useProfile();
   const wallet = readWorkerWallet();
+  const displayName = profile?.full_name?.trim() || "Worker";
+  const firstName = displayName.split(" ")[0] || "Worker";
   const openJobs = jobs.filter((job) => job.status === "Open").slice(0, 4);
   const completedJobsCount = jobs.filter((job) => job.status === "Completed").length;
   const averageJobRating = jobs.length
@@ -40,8 +44,8 @@ function WorkerDashboard() {
   return (
     <AppShell
       role="worker"
-      title="Molo, Sipho 👋"
-      subtitle="Gardener · Belhar Ext 13"
+      title={`Molo, ${firstName} 👋`}
+      subtitle={profile?.location ? `Worker · ${profile.location}` : "Your dashboard"}
       action={
         <button
           onClick={toggleAvailability}
