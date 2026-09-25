@@ -50,6 +50,14 @@ export function SiteFooter() {
             ["Earnings", "/signup"],
           ]}
         />
+        <FooterCol
+          title="Support"
+          links={[
+            ["Contact", "/contact"],
+            ["How it works", "/about"],
+            ["Log in", "/login"],
+          ]}
+        />
       </div>
       <div className="border-t border-border py-5 text-center text-xs text-muted-foreground">
         © 2026 Connectly · Belhar, Cape Town

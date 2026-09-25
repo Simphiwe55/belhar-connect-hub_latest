@@ -1,9 +1,11 @@
-import { useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { usePaymentMethods, useUserPreferences } from "@/lib/hooks";
 import { useProfile, useSignOut } from "@/lib/auth";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { getRecentActivity, recordEvent } from "@/lib/tracking";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({
@@ -23,6 +25,7 @@ export const Route = createFileRoute("/settings")({
 function Settings() {
   const { profile } = useProfile();
   const signOut = useSignOut();
+  const navigate = useNavigate();
   const { preferences, updatePreferences } = useUserPreferences();
   const profileName = profile?.full_name ?? "Your name";
   const profileEmail = profile?.email ?? "your@email.com";
@@ -32,6 +35,9 @@ function Settings() {
   const [showAddPayment, setShowAddPayment] = useState(false);
   const [newPayment, setNewPayment] = useState({ cardName: "", cardNumber: "", cvv: "", expiry: "" });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+  const [showDeleteAccountConfirm, setShowDeleteAccountConfirm] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const recentActivity = useMemo(() => getRecentActivity(), []);
 
   const flip = (k: string) => {
     const notifKey = k as keyof typeof preferences.notifications;
@@ -87,6 +93,28 @@ function Settings() {
     toast.success("Payment method removed");
   };
 
+  const handleDeleteAccount = async () => {
+    try {
+      setIsDeletingAccount(true);
+      const { error } = await supabase.rpc("delete_own_account");
+
+      if (error) {
+        throw error;
+      }
+
+      recordEvent("account_deleted", { deletedAt: new Date().toISOString() });
+      await supabase.auth.signOut().catch(() => null);
+      toast.success("Your account has been deleted.");
+      navigate({ to: "/login", replace: true });
+    } catch (error) {
+      console.error(error);
+      toast.error("Unable to delete your account right now. Please contact support.");
+    } finally {
+      setIsDeletingAccount(false);
+      setShowDeleteAccountConfirm(false);
+    }
+  };
+
   const notificationToggles = [
     { key: "newJobMatches", label: "New job matches" },
     { key: "applicationUpdates", label: "Application updates" },
@@ -109,7 +137,7 @@ function Settings() {
             <Link to="/profile" className="btn-secondary w-full" title="Edit your profile information">
               Edit profile
             </Link>
-            <Link to="/profile" className="btn-secondary w-full" title="Change your account password">
+            <Link to="/forgot-password" className="btn-secondary w-full" title="Change your account password">
               Change password
             </Link>
           </div>
@@ -328,7 +356,15 @@ function Settings() {
         </div>
 
         <div className="card-surface p-6 lg:col-span-2">
-          <h2 className="font-display text-lg font-bold">Support</h2>
+          <div className="flex items-center justify-between gap-4">
+            <h2 className="font-display text-lg font-bold">Support</h2>
+            <button
+              onClick={() => setShowDeleteAccountConfirm(true)}
+              className="btn-ghost !text-destructive"
+            >
+              Delete account
+            </button>
+          </div>
           <div className="mt-4 grid gap-2 sm:grid-cols-3">
             <button onClick={() => toast.info("Help centre articles are being prepared for launch.")} className="btn-secondary w-full" title="Visit help center">
               Help centre
@@ -340,10 +376,51 @@ function Settings() {
               Community guidelines
             </button>
           </div>
+          <div className="mt-5 rounded-xl border border-border bg-muted/50 p-4">
+            <h3 className="text-sm font-semibold text-foreground">Recent account activity</h3>
+            <div className="mt-3 space-y-2 text-xs text-muted-foreground">
+              {recentActivity.length > 0 ? (
+                recentActivity.slice(0, 5).map((item) => (
+                  <div key={item.id} className="flex items-center justify-between gap-3 rounded-lg bg-surface px-2 py-1.5">
+                    <span>{item.type}</span>
+                    <span>{new Date(item.timestamp).toLocaleString()}</span>
+                  </div>
+                ))
+              ) : (
+                <p>No recent activity yet.</p>
+              )}
+            </div>
+          </div>
           <button onClick={signOut} className="btn-ghost mt-4 w-full !text-destructive">
             Log out
           </button>
         </div>
+
+        {showDeleteAccountConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <div className="card-surface max-w-md space-y-4 p-6">
+              <h3 className="font-display text-xl font-bold">Delete your account?</h3>
+              <p className="text-sm text-muted-foreground">
+                This will permanently remove your Connectly account and all related activity. This action cannot be undone.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleDeleteAccount}
+                  className="btn-primary flex-1 !bg-red-600 hover:!bg-red-700"
+                  disabled={isDeletingAccount}
+                >
+                  {isDeletingAccount ? "Deleting..." : "Yes, delete"}
+                </button>
+                <button
+                  onClick={() => setShowDeleteAccountConfirm(false)}
+                  className="btn-secondary flex-1"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </AppShell>
   );

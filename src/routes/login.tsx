@@ -141,9 +141,9 @@ function Login() {
             <label className="flex items-center gap-2 text-muted-foreground">
               <input type="checkbox" className="h-4 w-4 accent-[var(--primary)]" /> Remember me
             </label>
-            <button type="button" className="font-semibold text-primary">
+            <Link to="/forgot-password" className="font-semibold text-primary">
               Forgot password?
-            </button>
+            </Link>
           </div>
           <button type="submit" className="btn-primary w-full" disabled={isSubmitting}>
             {isSubmitting

@@ -77,7 +77,15 @@ function ErrorComponent({ error, reset }: { error: unknown; reset: () => void })
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   beforeLoad: async ({ location }) => {
-    const publicPaths = new Set(["/", "/about", "/login", "/signup"]);
+    const publicPaths = new Set([
+      "/",
+      "/about",
+      "/contact",
+      "/login",
+      "/signup",
+      "/forgot-password",
+      "/reset-password",
+    ]);
     const pathname = location.pathname;
 
     if (publicPaths.has(pathname)) {
