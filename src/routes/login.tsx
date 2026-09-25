@@ -61,7 +61,15 @@ function Login() {
         return;
       }
 
-      navigate({ to: role === "member" ? "/member/dashboard" : "/worker/dashboard" });
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", data.user.id)
+        .maybeSingle();
+
+      navigate({
+        to: profileData?.role === "worker" ? "/worker/dashboard" : "/member/dashboard",
+      });
     } catch (submitError) {
       setError(
         submitError instanceof Error

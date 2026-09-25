@@ -43,7 +43,11 @@ export function AppShell({
   const signOut = useSignOut();
 
   const effectiveRole: "member" | "worker" =
-    role ?? (profile?.role === "worker" ? "worker" : "member");
+    profile?.role === "worker"
+      ? "worker"
+      : profile?.role === "member"
+        ? "member"
+        : role ?? "member";
   const nav = effectiveRole === "member" ? memberNav : workerNav;
   const person = profile?.full_name ?? "Your account";
   const label = effectiveRole === "member" ? "Community Member" : "Worker";

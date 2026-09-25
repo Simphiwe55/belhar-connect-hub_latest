@@ -73,8 +73,10 @@ function Profile() {
     setShowPasswordChange(false);
   };
 
+  const effectiveRole = profile?.role === "worker" ? "worker" : "member";
+
   return (
-    <AppShell role="worker" title="My Profile" subtitle="How the community sees you">
+    <AppShell role={effectiveRole} title="My Profile" subtitle="How the community sees you">
       <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <div className="space-y-6">
           <div className="card-surface p-6">
