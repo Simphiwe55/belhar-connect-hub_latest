@@ -3,6 +3,7 @@ import { AppShell } from "@/components/AppShell";
 import { JobCard, StatCard, Section } from "@/components/ui-kit";
 import { useAvailability, useJobs } from "@/lib/hooks";
 import { useNavigate } from "@tanstack/react-router";
+import { useProfile } from "@/lib/auth";
 
 export const Route = createFileRoute("/worker/dashboard")({
   head: () => ({
@@ -23,13 +24,17 @@ function WorkerDashboard() {
   const { available, toggleAvailability } = useAvailability();
   const navigate = useNavigate();
   const { jobs } = useJobs();
+  const { profile } = useProfile();
   const openJobs = jobs.filter((j) => j.status === "Open").slice(0, 4);
+  const name = profile?.full_name || "Worker";
+  const role = profile?.skills?.[0] || "Local worker";
+  const location = profile?.location || "Belhar, Cape Town";
 
   return (
     <AppShell
       role="worker"
-      title="Molo, Sipho 👋"
-      subtitle="Gardener · Belhar Ext 13"
+      title={`Molo, ${name.split(" ")[0]}!`}
+      subtitle={`${role} · ${location}`}
       action={
         <button
           onClick={toggleAvailability}
@@ -83,7 +88,10 @@ function WorkerDashboard() {
       <Section
         title="Recommended for you"
         action={
-          <Link to="/worker/find-jobs" className="text-sm font-semibold text-primary hover:underline">
+          <Link
+            to="/worker/find-jobs"
+            className="text-sm font-semibold text-primary hover:underline"
+          >
             See all jobs
           </Link>
         }
@@ -111,7 +119,10 @@ function WorkerDashboard() {
       <Section
         title="My applications"
         action={
-          <Link to="/worker/applications" className="text-sm font-semibold text-primary hover:underline">
+          <Link
+            to="/worker/applications"
+            className="text-sm font-semibold text-primary hover:underline"
+          >
             View all
           </Link>
         }

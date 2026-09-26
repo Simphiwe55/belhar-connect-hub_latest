@@ -11,15 +11,18 @@ export function useUserId() {
     queryFn: async () => {
       const { data, error } = await supabase.auth.getUser();
       if (error) throw error;
-      return data.user?.id ?? null;
+      return {
+        id: data.user?.id ?? null,
+        email: data.user?.email ?? null,
+      };
     },
     staleTime: 30_000,
   });
-  return { userId: data ?? null, isLoading };
+  return { userId: data?.id ?? null, email: data?.email ?? null, isLoading };
 }
 
 export function useProfile() {
-  const { userId, isLoading: loadingUser } = useUserId();
+  const { userId, email, isLoading: loadingUser } = useUserId();
   const { data, isLoading } = useQuery({
     queryKey: ["profile", userId],
     enabled: !!userId,
@@ -33,7 +36,7 @@ export function useProfile() {
       return data as Profile | null;
     },
   });
-  return { userId, profile: data ?? null, isLoading: loadingUser || isLoading };
+  return { userId, email, profile: data ?? null, isLoading: loadingUser || isLoading };
 }
 
 export function useSignOut() {

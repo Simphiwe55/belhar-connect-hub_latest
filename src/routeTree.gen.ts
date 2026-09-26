@@ -11,7 +11,9 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
+import { Route as CommunityGuidelinesRouteImport } from './routes/community-guidelines'
 import { Route as EarningsRouteImport } from './routes/earnings'
+import { Route as HelpRouteImport } from './routes/help'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as ProfileRouteImport } from './routes/profile'
@@ -22,6 +24,7 @@ import { Route as MemberJobsRouteImport } from './routes/member.jobs'
 import { Route as MemberPostJobRouteImport } from './routes/member.post-job'
 import { Route as MessagesIndexRouteImport } from './routes/messages.index'
 import { Route as MessagesChatIdRouteImport } from './routes/messages.$chatId'
+import { Route as SupportReportRouteImport } from './routes/support.report'
 import { Route as WorkerApplicationsRouteImport } from './routes/worker.applications'
 import { Route as WorkerDashboardRouteImport } from './routes/worker.dashboard'
 import { Route as WorkerFindJobsRouteImport } from './routes/worker.find-jobs'
@@ -38,9 +41,19 @@ const AboutRoute = AboutRouteImport.update({
   path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CommunityGuidelinesRoute = CommunityGuidelinesRouteImport.update({
+  id: '/community-guidelines',
+  path: '/community-guidelines',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const EarningsRoute = EarningsRouteImport.update({
   id: '/earnings',
   path: '/earnings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HelpRoute = HelpRouteImport.update({
+  id: '/help',
+  path: '/help',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -93,6 +106,11 @@ const MessagesChatIdRoute = MessagesChatIdRouteImport.update({
   path: '/messages/$chatId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SupportReportRoute = SupportReportRouteImport.update({
+  id: '/support/report',
+  path: '/support/report',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const WorkerApplicationsRoute = WorkerApplicationsRouteImport.update({
   id: '/worker/applications',
   path: '/worker/applications',
@@ -122,7 +140,9 @@ const WorkerJobJobIdRoute = WorkerJobJobIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/community-guidelines': typeof CommunityGuidelinesRoute
   '/earnings': typeof EarningsRoute
+  '/help': typeof HelpRoute
   '/login': typeof LoginRoute
   '/notifications': typeof NotificationsRoute
   '/profile': typeof ProfileRoute
@@ -132,6 +152,7 @@ export interface FileRoutesByFullPath {
   '/member/jobs': typeof MemberJobsRoute
   '/member/post-job': typeof MemberPostJobRoute
   '/messages/$chatId': typeof MessagesChatIdRoute
+  '/support/report': typeof SupportReportRoute
   '/worker/applications': typeof WorkerApplicationsRoute
   '/worker/dashboard': typeof WorkerDashboardRoute
   '/worker/find-jobs': typeof WorkerFindJobsRoute
@@ -142,7 +163,9 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/community-guidelines': typeof CommunityGuidelinesRoute
   '/earnings': typeof EarningsRoute
+  '/help': typeof HelpRoute
   '/login': typeof LoginRoute
   '/notifications': typeof NotificationsRoute
   '/profile': typeof ProfileRoute
@@ -152,6 +175,7 @@ export interface FileRoutesByTo {
   '/member/jobs': typeof MemberJobsRoute
   '/member/post-job': typeof MemberPostJobRoute
   '/messages/$chatId': typeof MessagesChatIdRoute
+  '/support/report': typeof SupportReportRoute
   '/worker/applications': typeof WorkerApplicationsRoute
   '/worker/dashboard': typeof WorkerDashboardRoute
   '/worker/find-jobs': typeof WorkerFindJobsRoute
@@ -163,7 +187,9 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/community-guidelines': typeof CommunityGuidelinesRoute
   '/earnings': typeof EarningsRoute
+  '/help': typeof HelpRoute
   '/login': typeof LoginRoute
   '/notifications': typeof NotificationsRoute
   '/profile': typeof ProfileRoute
@@ -173,6 +199,7 @@ export interface FileRoutesById {
   '/member/jobs': typeof MemberJobsRoute
   '/member/post-job': typeof MemberPostJobRoute
   '/messages/$chatId': typeof MessagesChatIdRoute
+  '/support/report': typeof SupportReportRoute
   '/worker/applications': typeof WorkerApplicationsRoute
   '/worker/dashboard': typeof WorkerDashboardRoute
   '/worker/find-jobs': typeof WorkerFindJobsRoute
@@ -185,7 +212,9 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/about'
+    | '/community-guidelines'
     | '/earnings'
+    | '/help'
     | '/login'
     | '/notifications'
     | '/profile'
@@ -195,6 +224,7 @@ export interface FileRouteTypes {
     | '/member/jobs'
     | '/member/post-job'
     | '/messages/$chatId'
+    | '/support/report'
     | '/worker/applications'
     | '/worker/dashboard'
     | '/worker/find-jobs'
@@ -205,7 +235,9 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/about'
+    | '/community-guidelines'
     | '/earnings'
+    | '/help'
     | '/login'
     | '/notifications'
     | '/profile'
@@ -215,6 +247,7 @@ export interface FileRouteTypes {
     | '/member/jobs'
     | '/member/post-job'
     | '/messages/$chatId'
+    | '/support/report'
     | '/worker/applications'
     | '/worker/dashboard'
     | '/worker/find-jobs'
@@ -225,7 +258,9 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/about'
+    | '/community-guidelines'
     | '/earnings'
+    | '/help'
     | '/login'
     | '/notifications'
     | '/profile'
@@ -235,6 +270,7 @@ export interface FileRouteTypes {
     | '/member/jobs'
     | '/member/post-job'
     | '/messages/$chatId'
+    | '/support/report'
     | '/worker/applications'
     | '/worker/dashboard'
     | '/worker/find-jobs'
@@ -246,7 +282,9 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
+  CommunityGuidelinesRoute: typeof CommunityGuidelinesRoute
   EarningsRoute: typeof EarningsRoute
+  HelpRoute: typeof HelpRoute
   LoginRoute: typeof LoginRoute
   NotificationsRoute: typeof NotificationsRoute
   ProfileRoute: typeof ProfileRoute
@@ -256,6 +294,7 @@ export interface RootRouteChildren {
   MemberJobsRoute: typeof MemberJobsRoute
   MemberPostJobRoute: typeof MemberPostJobRoute
   MessagesChatIdRoute: typeof MessagesChatIdRoute
+  SupportReportRoute: typeof SupportReportRoute
   WorkerApplicationsRoute: typeof WorkerApplicationsRoute
   WorkerDashboardRoute: typeof WorkerDashboardRoute
   WorkerFindJobsRoute: typeof WorkerFindJobsRoute
@@ -280,11 +319,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AboutRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/community-guidelines': {
+      id: '/community-guidelines'
+      path: '/community-guidelines'
+      fullPath: '/community-guidelines'
+      preLoaderRoute: typeof CommunityGuidelinesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/earnings': {
       id: '/earnings'
       path: '/earnings'
       fullPath: '/earnings'
       preLoaderRoute: typeof EarningsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/help': {
+      id: '/help'
+      path: '/help'
+      fullPath: '/help'
+      preLoaderRoute: typeof HelpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -357,6 +410,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MessagesChatIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/support/report': {
+      id: '/support/report'
+      path: '/support/report'
+      fullPath: '/support/report'
+      preLoaderRoute: typeof SupportReportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/worker/applications': {
       id: '/worker/applications'
       path: '/worker/applications'
@@ -398,7 +458,9 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
+  CommunityGuidelinesRoute: CommunityGuidelinesRoute,
   EarningsRoute: EarningsRoute,
+  HelpRoute: HelpRoute,
   LoginRoute: LoginRoute,
   NotificationsRoute: NotificationsRoute,
   ProfileRoute: ProfileRoute,
@@ -408,6 +470,7 @@ const rootRouteChildren: RootRouteChildren = {
   MemberJobsRoute: MemberJobsRoute,
   MemberPostJobRoute: MemberPostJobRoute,
   MessagesChatIdRoute: MessagesChatIdRoute,
+  SupportReportRoute: SupportReportRoute,
   WorkerApplicationsRoute: WorkerApplicationsRoute,
   WorkerDashboardRoute: WorkerDashboardRoute,
   WorkerFindJobsRoute: WorkerFindJobsRoute,

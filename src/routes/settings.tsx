@@ -21,12 +21,19 @@ export const Route = createFileRoute("/settings")({
 });
 
 function Settings() {
-  const { profile } = useProfile();
+  const { profile, email } = useProfile();
   const signOut = useSignOut();
   const { preferences, updatePreferences } = useUserPreferences();
   const { methods, addPaymentMethod, removePaymentMethod, setDefault } = usePaymentMethods();
   const [showAddPayment, setShowAddPayment] = useState(false);
-  const [newPayment, setNewPayment] = useState({ cardName: "", cardNumber: "", cvv: "", expiry: "" });
+  const [newPayment, setNewPayment] = useState({
+    cardName: "",
+    cardNumber: "",
+    cvv: "",
+    expiry: "",
+  });
+  const [paymentFormError, setPaymentFormError] = useState<string | null>(null);
+  const [paymentFormSuccess, setPaymentFormSuccess] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
 
   const flip = (k: string) => {
@@ -48,33 +55,69 @@ function Settings() {
 
   const handleAddPayment = (e: React.FormEvent) => {
     e.preventDefault();
+    setPaymentFormError(null);
+    setPaymentFormSuccess(null);
 
     if (!newPayment.cardName.trim()) {
-      toast.error("Card name is required");
+      setPaymentFormError("Card name is required.");
       return;
     }
-    if (!newPayment.cardNumber.trim() || newPayment.cardNumber.length < 16) {
-      toast.error("Valid card number is required");
+    if (!isValidCardNumber(newPayment.cardNumber)) {
+      setPaymentFormError("Enter a valid card number.");
       return;
     }
-    if (!newPayment.cvv.trim() || newPayment.cvv.length < 3) {
-      toast.error("Valid CVV is required");
+    const expiryMatch = /^(0[1-9]|1[0-2])\/(\d{2})$/.exec(newPayment.expiry);
+    if (!expiryMatch) {
+      setPaymentFormError("Enter the expiry date in MM/YY format.");
+      return;
+    }
+    const expiryYear = 2000 + Number(expiryMatch[2]);
+    const expiryMonth = Number(expiryMatch[1]);
+    const now = new Date();
+    if (
+      expiryYear < now.getFullYear() ||
+      (expiryYear === now.getFullYear() && expiryMonth < now.getMonth() + 1)
+    ) {
+      setPaymentFormError("This card has expired.");
+      return;
+    }
+    const expectedCvvLength =
+      newPayment.cardNumber.startsWith("34") || newPayment.cardNumber.startsWith("37") ? 4 : 3;
+    if (!new RegExp(`^\\d{${expectedCvvLength}}$`).test(newPayment.cvv)) {
+      setPaymentFormError(`Enter a ${expectedCvvLength}-digit security code.`);
       return;
     }
 
+    const cardBrand = getCardBrand(newPayment.cardNumber);
     const newMethod = {
       id: `pm${Date.now()}`,
       type: "card" as const,
-      name: newPayment.cardName,
+      name: newPayment.cardName.trim() || `${cardBrand} card`,
       details: `**** **** **** ${newPayment.cardNumber.slice(-4)}`,
       isDefault: methods.length === 0,
       lastUsed: "Just now",
     };
 
-    addPaymentMethod(newMethod);
+    try {
+      addPaymentMethod(newMethod);
+    } catch (error) {
+      setPaymentFormError(
+        error instanceof Error
+          ? `Could not save this card: ${error.message}`
+          : "Could not save this card. Please try again.",
+      );
+      return;
+    }
+
     setNewPayment({ cardName: "", cardNumber: "", cvv: "", expiry: "" });
     setShowAddPayment(false);
-    toast.success("Payment method added successfully");
+    setPaymentFormSuccess(`${cardBrand} ending in ${newMethod.details.slice(-4)} added.`);
+  };
+
+  const cancelAddPayment = () => {
+    setNewPayment({ cardName: "", cardNumber: "", cvv: "", expiry: "" });
+    setPaymentFormError(null);
+    setShowAddPayment(false);
   };
 
   const handleRemovePayment = (id: string) => {
@@ -91,21 +134,33 @@ function Settings() {
   ];
 
   return (
-    <AppShell role={profile?.role === "worker" ? "worker" : "member"} title="Settings" subtitle="Account, notifications and appearance">
+    <AppShell
+      role={profile?.role === "worker" ? "worker" : "member"}
+      title="Settings"
+      subtitle="Account, notifications and appearance"
+    >
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="card-surface p-6">
           <h2 className="font-display text-lg font-bold">Account</h2>
           <div className="mt-4 space-y-3 text-sm">
-            <Row label="Name" value="Fatima Adams" />
-            <Row label="Email" value="fatima.adams@gmail.com" />
-            <Row label="Phone" value="072 418 9032" />
-            <Row label="Location" value="Belhar Ext 15, Cape Town" />
+            <Row label="Name" value={profile?.full_name || "Not set"} />
+            <Row label="Email" value={email || "Not set"} />
+            <Row label="Phone" value={profile?.phone || "Not set"} />
+            <Row label="Location" value={profile?.location || "Not set"} />
           </div>
           <div className="mt-5 space-y-2">
-            <Link to="/profile" className="btn-secondary w-full" title="Edit your profile information">
+            <Link
+              to="/profile"
+              className="btn-secondary w-full"
+              title="Edit your profile information"
+            >
               Edit profile
             </Link>
-            <Link to="/profile" className="btn-secondary w-full" title="Change your account password">
+            <Link
+              to="/profile"
+              className="btn-secondary w-full"
+              title="Change your account password"
+            >
               Change password
             </Link>
           </div>
@@ -181,80 +236,105 @@ function Settings() {
               + Add Payment Method
             </button>
           </div>
-
           {showAddPayment && (
-            <form onSubmit={handleAddPayment} className="mt-4 space-y-3 rounded-lg border border-border p-4">
+            <form
+              onSubmit={handleAddPayment}
+              className="mt-4 space-y-3 rounded-lg border border-border p-4"
+            >
               <label>
-                <span className="mb-1 block text-sm font-semibold">Card Name</span>
+                <span className="mb-1 block text-sm font-semibold">Card name</span>
                 <input
+                  required
                   type="text"
+                  autoComplete="off"
                   value={newPayment.cardName}
                   onChange={(e) => setNewPayment({ ...newPayment, cardName: e.target.value })}
                   className="field"
-                  placeholder="e.g., My Visa Card"
+                  placeholder="Name on card"
                 />
               </label>
-              <label>
-                <span className="mb-1 block text-sm font-semibold">Card Number</span>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={19}
-                  value={newPayment.cardNumber}
-                  onChange={(e) =>
-                    setNewPayment({
-                      ...newPayment,
-                      cardNumber: e.target.value.replace(/\D/g, ""),
-                    })
-                  }
-                  className="field"
-                  placeholder="1234 5678 9012 3456"
-                />
-              </label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="sm:col-span-2">
+                  <span className="mb-1 block text-sm font-semibold">Card number</span>
+                  <input
+                    required
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    maxLength={23}
+                    value={newPayment.cardNumber.replace(/(\d{4})(?=\d)/g, "$1 ")}
+                    onChange={(e) =>
+                      setNewPayment({
+                        ...newPayment,
+                        cardNumber: e.target.value.replace(/\D/g, "").slice(0, 19),
+                      })
+                    }
+                    className="field"
+                    placeholder="0000 0000 0000 0000"
+                  />
+                </label>
+                <label>
+                  <span className="mb-1 block text-sm font-semibold">Expiry date</span>
+                  <input
+                    required
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    maxLength={5}
+                    value={newPayment.expiry}
+                    onChange={(e) => {
+                      const digits = e.target.value.replace(/\D/g, "").slice(0, 4);
+                      setNewPayment({
+                        ...newPayment,
+                        expiry:
+                          digits.length > 2 ? `${digits.slice(0, 2)}/${digits.slice(2)}` : digits,
+                      });
+                    }}
+                    className="field"
+                    placeholder="MM/YY"
+                  />
+                </label>
                 <label>
                   <span className="mb-1 block text-sm font-semibold">CVV</span>
                   <input
+                    required
                     type="password"
                     inputMode="numeric"
+                    autoComplete="off"
                     maxLength={4}
                     value={newPayment.cvv}
                     onChange={(e) =>
                       setNewPayment({
                         ...newPayment,
-                        cvv: e.target.value.replace(/\D/g, ""),
+                        cvv: e.target.value.replace(/\D/g, "").slice(0, 4),
                       })
                     }
                     className="field"
                     placeholder="123"
                   />
                 </label>
-                <label>
-                  <span className="mb-1 block text-sm font-semibold">Expires</span>
-                  <input
-                    type="text"
-                    className="field"
-                    placeholder="MM/YY"
-                    maxLength={5}
-                    value={newPayment.expiry}
-                    onChange={(e) => setNewPayment({ ...newPayment, expiry: e.target.value })}
-                  />
-                </label>
               </div>
+              {paymentFormError ? (
+                <p role="alert" className="text-sm text-destructive">
+                  {paymentFormError}
+                </p>
+              ) : null}
               <div className="flex gap-2">
                 <button type="submit" className="btn-primary flex-1">
                   Add Card
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setShowAddPayment(false)}
-                  className="btn-secondary flex-1"
-                >
+                <button type="button" onClick={cancelAddPayment} className="btn-secondary flex-1">
                   Cancel
                 </button>
               </div>
             </form>
           )}
+
+          {paymentFormSuccess ? (
+            <p role="status" className="mt-4 text-sm text-primary">
+              {paymentFormSuccess}
+            </p>
+          ) : null}
 
           <div className="mt-4 space-y-2">
             {methods.length > 0 ? (
@@ -294,7 +374,8 @@ function Settings() {
                       <div className="card-surface max-w-sm space-y-4 p-6">
                         <h3 className="font-display text-lg font-bold">Remove Payment Method?</h3>
                         <p className="text-sm text-muted-foreground">
-                          Are you sure you want to remove {method.name}? This action cannot be undone.
+                          Are you sure you want to remove {method.name}? This action cannot be
+                          undone.
                         </p>
                         <div className="flex gap-3">
                           <button
@@ -326,15 +407,27 @@ function Settings() {
         <div className="card-surface p-6 lg:col-span-2">
           <h2 className="font-display text-lg font-bold">Support</h2>
           <div className="mt-4 grid gap-2 sm:grid-cols-3">
-            <button onClick={() => toast.info("Help centre articles are being prepared for launch.")} className="btn-secondary w-full" title="Visit help center">
+            <Link
+              to="/help"
+              className="btn-secondary w-full"
+              title="Visit the Connectly help centre"
+            >
               Help centre
-            </button>
-            <button onClick={() => toast.success("Problem report opened. A support agent will follow up.")} className="btn-secondary w-full" title="Report a problem">
+            </Link>
+            <Link
+              to="/support/report"
+              className="btn-secondary w-full"
+              title="Send a problem report to Connectly support"
+            >
               Report a problem
-            </button>
-            <button onClick={() => toast.info("Community guidelines: be respectful, pay fairly, and keep all job communication inside Connectly.")} className="btn-secondary w-full" title="Read community guidelines">
+            </Link>
+            <Link
+              to="/community-guidelines"
+              className="btn-secondary w-full"
+              title="Read Connectly community guidelines"
+            >
               Community guidelines
-            </button>
+            </Link>
           </div>
           <button onClick={signOut} className="btn-ghost mt-4 w-full !text-destructive">
             Log out
@@ -352,4 +445,30 @@ function Row({ label, value }: { label: string; value: string }) {
       <span className="truncate font-medium">{value}</span>
     </div>
   );
+}
+
+function isValidCardNumber(number: string) {
+  if (!/^\d{13,19}$/.test(number)) return false;
+
+  let sum = 0;
+  let doubleDigit = false;
+  for (let index = number.length - 1; index >= 0; index -= 1) {
+    let digit = Number(number[index]);
+    if (doubleDigit) {
+      digit *= 2;
+      if (digit > 9) digit -= 9;
+    }
+    sum += digit;
+    doubleDigit = !doubleDigit;
+  }
+
+  return sum % 10 === 0;
+}
+
+function getCardBrand(number: string) {
+  if (number.startsWith("4")) return "Visa";
+  if (/^(5[1-5]|2(2[2-9]|[3-6]\d|7[01]|720))/.test(number)) return "Mastercard";
+  if (/^3[47]/.test(number)) return "American Express";
+  if (/^6(?:011|5)/.test(number)) return "Discover";
+  return "Payment";
 }
