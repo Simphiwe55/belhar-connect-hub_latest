@@ -26,9 +26,27 @@ export const defaultWorkerWallet: WorkerWallet = {
   cardBrand: "Visa",
   cardLast4: "4242",
   transactions: [
-    { id: "tx-1", type: "payment", amount: 1200, date: "2026-08-01", description: "Install outside plug points" },
-    { id: "tx-2", type: "payment", amount: 450, date: "2026-07-28", description: "Hedge trimming & lawn" },
-    { id: "tx-3", type: "payment", amount: 700, date: "2026-07-25", description: "Deep clean 2-bedroom flat" },
+    {
+      id: "tx-1",
+      type: "payment",
+      amount: 1200,
+      date: "2026-08-01",
+      description: "Install outside plug points",
+    },
+    {
+      id: "tx-2",
+      type: "payment",
+      amount: 450,
+      date: "2026-07-28",
+      description: "Hedge trimming & lawn",
+    },
+    {
+      id: "tx-3",
+      type: "payment",
+      amount: 700,
+      date: "2026-07-25",
+      description: "Deep clean 2-bedroom flat",
+    },
   ],
 };
 
@@ -36,7 +54,7 @@ export function formatCurrency(value: number): string {
   return new Intl.NumberFormat("en-ZA", {
     style: "currency",
     currency: "ZAR",
-    maximumFractionDigits: 0,
+    maximumFractionDigits: 2,
   }).format(value);
 }
 
@@ -56,7 +74,9 @@ export function readWorkerWallet(): WorkerWallet {
     return {
       ...defaultWorkerWallet,
       ...parsed,
-      transactions: Array.isArray(parsed.transactions) ? parsed.transactions : defaultWorkerWallet.transactions,
+      transactions: Array.isArray(parsed.transactions)
+        ? parsed.transactions
+        : defaultWorkerWallet.transactions,
     };
   } catch {
     return defaultWorkerWallet;
@@ -70,7 +90,10 @@ export function writeWorkerWallet(wallet: WorkerWallet) {
   return wallet;
 }
 
-export function withdrawWorkerEarnings(amount: number): WorkerWallet {
+export function withdrawWorkerEarnings(
+  amount: number,
+  payoutMethod: { name: string; details: string },
+): WorkerWallet {
   const current = readWorkerWallet();
 
   if (!Number.isFinite(amount) || amount <= 0) {
@@ -81,17 +104,33 @@ export function withdrawWorkerEarnings(amount: number): WorkerWallet {
     throw new Error("You cannot withdraw more than the amount available to withdraw.");
   }
 
+  const cardLast4 = payoutMethod.details.replace(/\D/g, "").slice(-4);
+  if (!cardLast4) {
+    throw new Error("The selected payout card does not have a valid card number.");
+  }
+
+  const cardBrand = /mastercard/i.test(payoutMethod.name)
+    ? "Mastercard"
+    : /amex|american express/i.test(payoutMethod.name)
+      ? "American Express"
+      : /visa/i.test(payoutMethod.name)
+        ? "Visa"
+        : "Card";
+
   const nextWallet: WorkerWallet = {
     ...current,
     availableToWithdraw: Number((current.availableToWithdraw - amount).toFixed(2)),
     cardBalance: Number((current.cardBalance + amount).toFixed(2)),
+    cardHolder: payoutMethod.name,
+    cardBrand,
+    cardLast4,
     transactions: [
       {
         id: `withdraw-${Date.now()}`,
-        type: "withdrawal",
+        type: "withdrawal" as const,
         amount,
         date: new Date().toISOString(),
-        description: `Transfer to ${current.cardBrand} ending ${current.cardLast4}`,
+        description: `Payout recorded to ${cardBrand} ending ${cardLast4}`,
       },
       ...current.transactions,
     ].slice(0, 8),
