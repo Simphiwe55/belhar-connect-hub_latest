@@ -113,7 +113,7 @@ export function JobCard({
         <Link to={to} params={{ jobId: job.id }} className="btn-primary !h-10 !px-4 !text-sm">
           {view === "worker" ? "Apply Now" : "View job"}
         </Link>
-        <Link to="/messages/" className="btn-secondary !h-10 !px-4 !text-sm">
+        <Link to="/messages" className="btn-secondary !h-10 !px-4 !text-sm">
           Message
         </Link>
         {view === "worker" && onToggleSaved && (

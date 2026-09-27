@@ -27,10 +27,10 @@ export type UserPreferences = {
 // Hooks for managing state
 
 export function useAvailability() {
-  const [available, setAvailable] = useState(() => {
+  const [available, setAvailable] = useState<boolean>(() => {
     if (typeof window === "undefined") return true;
     const stored = localStorage.getItem("workerAvailability");
-    return stored ? JSON.parse(stored) : true;
+    return stored === null ? true : stored === "true";
   });
 
   const toggleAvailability = useCallback(() => {
@@ -62,37 +62,44 @@ export function usePaymentMethods() {
         ];
   });
 
-  const addPaymentMethod = useCallback((method: PaymentMethod) => {
-    setMethods((prev) => {
-      const updated = prev.map((m) => ({ ...m, isDefault: false }));
+  const addPaymentMethod = useCallback(
+    (method: PaymentMethod) => {
+      const updated = methods.map((item) => ({ ...item, isDefault: false }));
       const newList = [...updated, { ...method, isDefault: true }];
       localStorage.setItem("paymentMethods", JSON.stringify(newList));
-      return newList;
-    });
-  }, []);
+      setMethods(newList);
+    },
+    [methods],
+  );
 
-  const removePaymentMethod = useCallback((id: string) => {
-    setMethods((prev) => {
-      const newList = prev.filter((m) => m.id !== id);
+  const removePaymentMethod = useCallback(
+    (id: string) => {
+      const removedDefault = methods.some((method) => method.id === id && method.isDefault);
+      let newList = methods.filter((method) => method.id !== id);
+      if (removedDefault && newList.length > 0) {
+        newList = newList.map((method, index) => ({ ...method, isDefault: index === 0 }));
+      }
       if (newList.length === 0) {
         localStorage.removeItem("paymentMethods");
       } else {
         localStorage.setItem("paymentMethods", JSON.stringify(newList));
       }
-      return newList;
-    });
-  }, []);
+      setMethods(newList);
+    },
+    [methods],
+  );
 
-  const setDefault = useCallback((id: string) => {
-    setMethods((prev) => {
-      const updated = prev.map((m) => ({
-        ...m,
-        isDefault: m.id === id,
+  const setDefault = useCallback(
+    (id: string) => {
+      const updated = methods.map((method) => ({
+        ...method,
+        isDefault: method.id === id,
       }));
       localStorage.setItem("paymentMethods", JSON.stringify(updated));
-      return updated;
-    });
-  }, []);
+      setMethods(updated);
+    },
+    [methods],
+  );
 
   return { methods, addPaymentMethod, removePaymentMethod, setDefault };
 }
@@ -183,10 +190,7 @@ export function useJobDrafts() {
     });
   }, []);
 
-  const getDraft = useCallback(
-    (id: string) => drafts[id],
-    [drafts]
-  );
+  const getDraft = useCallback((id: string) => drafts[id], [drafts]);
 
   return { drafts, saveDraft, removeDraft, getDraft };
 }
