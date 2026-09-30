@@ -128,3 +128,7 @@ cd <repository-name>
 npm i
 npm run dev
 ```
+
+## Email authentication
+
+Sign-up, email confirmation, sign-in and password recovery use the connected Supabase Auth project. In the Supabase dashboard, enable email confirmations under **Authentication → Providers → Email**, configure a production SMTP sender under **Authentication → SMTP Settings**, and add the local and deployed callback URLs under **Authentication → URL Configuration → Redirect URLs** (for local development, `http://localhost:8080/login`). Set the deployed app URL as the Site URL. Without confirmation enabled and an email sender configured, the app cannot deliver confirmation emails.

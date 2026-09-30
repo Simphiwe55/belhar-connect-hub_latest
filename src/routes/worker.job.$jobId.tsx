@@ -26,11 +26,11 @@ function WorkerJobDetail() {
   const { jobs } = useJobs();
   const { applied, applyToJob } = useApplications();
   const [applying, setApplying] = useState(false);
-  const job = jobs.find((j) => j.id === jobId) ?? jobs[0]!;
-  const hasApplied = applied.includes(job.id);
+  const job = jobs.find((j) => j.id === jobId);
+  const hasApplied = job ? applied.includes(job.id) : false;
 
   const handleApply = async () => {
-    if (hasApplied || applying) return;
+    if (!job || hasApplied || applying) return;
     setApplying(true);
     await new Promise((resolve) => setTimeout(resolve, 400));
     applyToJob(job.id);
@@ -38,8 +38,31 @@ function WorkerJobDetail() {
     toast.success("Application sent to the client");
   };
 
+  if (!job) {
+    return (
+      <AppShell
+        role="worker"
+        title="Job not found"
+        subtitle="This listing may have been removed or is no longer available."
+      >
+        <div className="card-surface p-8 text-center">
+          <p className="text-sm text-muted-foreground">
+            The job you’re looking for could not be found.
+          </p>
+          <Link to="/worker/find-jobs" className="btn-primary mt-5">
+            Browse available jobs
+          </Link>
+        </div>
+      </AppShell>
+    );
+  }
+
   return (
-    <AppShell role="worker" title={job.title} subtitle={`${job.location} · ${job.distanceKm} km away`}>
+    <AppShell
+      role="worker"
+      title={job.title}
+      subtitle={`${job.location} · ${job.distanceKm} km away`}
+    >
       <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <div className="card-surface p-6">
           <div className="flex flex-wrap items-center gap-2">
@@ -92,7 +115,13 @@ function WorkerJobDetail() {
                 onClick={handleApply}
                 disabled={hasApplied || applying || job.status !== "Open"}
               >
-                {hasApplied ? "Application sent" : applying ? "Sending…" : job.status === "Open" ? "Apply Now" : "Job closed"}
+                {hasApplied
+                  ? "Application sent"
+                  : applying
+                    ? "Sending…"
+                    : job.status === "Open"
+                      ? "Apply Now"
+                      : "Job closed"}
               </button>
               <Link to="/messages" className="btn-secondary w-full">
                 Message Client

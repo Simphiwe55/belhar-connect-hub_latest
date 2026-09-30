@@ -1,9 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { JobCard, StatCard, Section } from "@/components/ui-kit";
-import { useAvailability, useJobs } from "@/lib/hooks";
+import { applications as sampleApplications, weeklyEarnings } from "@/lib/data";
+import { useApplications, useAvailability, useJobs } from "@/lib/hooks";
 import { useNavigate } from "@tanstack/react-router";
 import { useProfile } from "@/lib/auth";
+import { formatCurrency, readWorkerWallet } from "@/lib/worker-wallet";
 
 export const Route = createFileRoute("/worker/dashboard")({
   head: () => ({
@@ -24,8 +26,25 @@ function WorkerDashboard() {
   const { available, toggleAvailability } = useAvailability();
   const navigate = useNavigate();
   const { jobs } = useJobs();
+  const { applied } = useApplications();
   const { profile } = useProfile();
-  const openJobs = jobs.filter((j) => j.status === "Open").slice(0, 4);
+  const openJobs = jobs
+    .filter((job) => job.status === "Open" && !applied.includes(job.id))
+    .sort((first, second) => {
+      const firstMatch = profile?.skills?.includes(first.category) ? 1 : 0;
+      const secondMatch = profile?.skills?.includes(second.category) ? 1 : 0;
+      return secondMatch - firstMatch || first.distanceKm - second.distanceKm;
+    })
+    .slice(0, 4);
+  const savedApplications = jobs.filter((job) => applied.includes(job.id)).map((job) => job.title);
+  const appliedCount = new Set([
+    ...sampleApplications.Applied.map((application) => application.job),
+    ...savedApplications,
+  ]).size;
+  const wallet = readWorkerWallet();
+  const weeklyTotal = weeklyEarnings.reduce((sum, day) => sum + day.amount, 0);
+  const completedJobs =
+    profile?.jobs_done ?? jobs.filter((job) => job.status === "Completed").length;
   const name = profile?.full_name || "Worker";
   const role = profile?.skills?.[0] || "Local worker";
   const location = profile?.location || "Belhar, Cape Town";
@@ -37,7 +56,9 @@ function WorkerDashboard() {
       subtitle={`${role} · ${location}`}
       action={
         <button
+          type="button"
           onClick={toggleAvailability}
+          aria-pressed={available}
           className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-2.5 transition-colors hover:bg-muted"
           title={available ? "Click to go offline" : "Click to go online"}
         >
@@ -60,27 +81,45 @@ function WorkerDashboard() {
     >
       <div className="grid gap-4 sm:grid-cols-3">
         <button
+          type="button"
           onClick={() => navigate({ to: "/worker/applications" })}
           className="card-surface text-left transition-colors hover:bg-muted"
         >
           <div className="p-5">
-            <StatCard label="Completed jobs" value="47" hint="8 this month" icon="✅" />
+            <StatCard
+              label="Completed jobs"
+              value={String(completedJobs)}
+              hint="View your applications"
+              icon="✅"
+            />
           </div>
         </button>
         <button
+          type="button"
           onClick={() => navigate({ to: "/earnings" })}
           className="card-surface text-left transition-colors hover:bg-muted"
         >
           <div className="p-5">
-            <StatCard label="Total earned" value="R23 850" hint="R3 630 this week" icon="💰" />
+            <StatCard
+              label="Total earned"
+              value={formatCurrency(wallet.totalEarned)}
+              hint={`${formatCurrency(weeklyTotal)} this week`}
+              icon="💰"
+            />
           </div>
         </button>
         <button
+          type="button"
           onClick={() => navigate({ to: "/profile" })}
           className="card-surface text-left transition-colors hover:bg-muted"
         >
           <div className="p-5">
-            <StatCard label="Rating" value="4.9★" hint="From 41 reviews" icon="⭐" />
+            <StatCard
+              label="Rating"
+              value={profile?.rating ? `${profile.rating.toFixed(1)}★` : "New"}
+              hint={`${profile?.jobs_done ?? 0} completed jobs`}
+              icon="⭐"
+            />
           </div>
         </button>
       </div>
@@ -98,15 +137,8 @@ function WorkerDashboard() {
       >
         {openJobs.length > 0 ? (
           <div className="grid gap-4 lg:grid-cols-2">
-            {openJobs.map((j) => (
-              <Link
-                key={j.id}
-                to="/worker/job/$jobId"
-                params={{ jobId: j.id }}
-                className="transition-transform hover:scale-105"
-              >
-                <JobCard job={j} view="worker" />
-              </Link>
+            {openJobs.map((job) => (
+              <JobCard key={job.id} job={job} view="worker" />
             ))}
           </div>
         ) : (
@@ -129,12 +161,13 @@ function WorkerDashboard() {
       >
         <div className="grid gap-4 sm:grid-cols-4">
           {[
-            ["Applied", 2],
-            ["Shortlisted", 1],
-            ["Hired", 1],
-            ["Rejected", 1],
+            ["Applied", appliedCount],
+            ["Shortlisted", sampleApplications.Shortlisted.length],
+            ["Hired", sampleApplications.Hired.length],
+            ["Rejected", sampleApplications.Rejected.length],
           ].map(([label, n]) => (
             <button
+              type="button"
               key={label as string}
               onClick={() => navigate({ to: "/worker/applications" })}
               className="card-surface p-5 transition-colors hover:bg-muted"

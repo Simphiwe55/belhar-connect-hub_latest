@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
-import { usePaymentMethods, useUserPreferences } from "@/lib/hooks";
+import { usePaymentMethods, useUserPreferences, type UserPreferences } from "@/lib/hooks";
 import { useProfile, useSignOut } from "@/lib/auth";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/settings")({
@@ -35,9 +36,16 @@ function Settings() {
   const [paymentFormError, setPaymentFormError] = useState<string | null>(null);
   const [paymentFormSuccess, setPaymentFormSuccess] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+  const [showPasswordChange, setShowPasswordChange] = useState(false);
+  const [password, setPassword] = useState({ next: "", confirm: "" });
+  const [savingPassword, setSavingPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
 
-  const flip = (k: string) => {
-    const notifKey = k as keyof typeof preferences.notifications;
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", preferences.theme === "dark");
+  }, [preferences.theme]);
+
+  const flip = (notifKey: keyof typeof preferences.notifications) => {
     updatePreferences({
       notifications: {
         ...preferences.notifications,
@@ -48,8 +56,35 @@ function Settings() {
 
   const handleToggleDarkMode = () => {
     updatePreferences({ theme: preferences.theme === "light" ? "dark" : "light" });
-    if (typeof document !== "undefined") {
-      document.documentElement.classList.toggle("dark", preferences.theme === "light");
+  };
+
+  const handlePasswordChange = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setPasswordError(null);
+    if (password.next.length < 8) {
+      setPasswordError("Password must be at least 8 characters.");
+      return;
+    }
+    if (password.next !== password.confirm) {
+      setPasswordError("Passwords do not match.");
+      return;
+    }
+
+    setSavingPassword(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: password.next });
+      if (error) {
+        setPasswordError(error.message);
+        return;
+      }
+
+      setPassword({ next: "", confirm: "" });
+      setShowPasswordChange(false);
+      toast.success("Password changed successfully.");
+    } catch (error) {
+      setPasswordError(error instanceof Error ? error.message : "Could not change your password.");
+    } finally {
+      setSavingPassword(false);
     }
   };
 
@@ -126,7 +161,7 @@ function Settings() {
     toast.success("Payment method removed");
   };
 
-  const notificationToggles = [
+  const notificationToggles: { key: keyof UserPreferences["notifications"]; label: string }[] = [
     { key: "newJobMatches", label: "New job matches" },
     { key: "applicationUpdates", label: "Application updates" },
     { key: "messages", label: "Messages" },
@@ -151,18 +186,23 @@ function Settings() {
           <div className="mt-5 space-y-2">
             <Link
               to="/profile"
+              search={{ edit: true }}
               className="btn-secondary w-full"
               title="Edit your profile information"
             >
               Edit profile
             </Link>
-            <Link
-              to="/profile"
+            <button
+              type="button"
+              onClick={() => {
+                setPasswordError(null);
+                setShowPasswordChange(true);
+              }}
               className="btn-secondary w-full"
               title="Change your account password"
             >
               Change password
-            </Link>
+            </button>
           </div>
         </div>
 
@@ -173,21 +213,18 @@ function Settings() {
               <button
                 key={item.key}
                 onClick={() => flip(item.key)}
+                aria-pressed={preferences.notifications[item.key]}
                 className="flex w-full items-center justify-between gap-4 rounded-xl px-1 py-3 text-left text-sm hover:bg-muted"
               >
                 <span className="font-medium">{item.label}</span>
                 <span
                   className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${
-                    preferences.notifications[item.key as keyof typeof preferences.notifications]
-                      ? "bg-primary"
-                      : "bg-border"
+                    preferences.notifications[item.key] ? "bg-primary" : "bg-border"
                   }`}
                 >
                   <span
                     className={`absolute top-1 h-5 w-5 rounded-full bg-surface transition-all ${
-                      preferences.notifications[item.key as keyof typeof preferences.notifications]
-                        ? "left-6"
-                        : "left-1"
+                      preferences.notifications[item.key] ? "left-6" : "left-1"
                     }`}
                   />
                 </span>
@@ -195,6 +232,7 @@ function Settings() {
             ))}
             <button
               onClick={handleToggleDarkMode}
+              aria-pressed={preferences.theme === "dark"}
               className="flex w-full items-center justify-between gap-4 rounded-xl px-1 py-3 text-left text-sm hover:bg-muted"
             >
               <span className="font-medium">Dark mode</span>
@@ -434,6 +472,60 @@ function Settings() {
           </button>
         </div>
       </div>
+      {showPasswordChange ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <form
+            onSubmit={handlePasswordChange}
+            className="card-surface w-full max-w-md space-y-4 p-6"
+          >
+            <h2 className="font-display text-lg font-bold">Change password</h2>
+            <label className="block">
+              <span className="mb-1 block text-sm font-semibold">New password</span>
+              <input
+                required
+                minLength={8}
+                type="password"
+                autoComplete="new-password"
+                value={password.next}
+                onChange={(event) => setPassword({ ...password, next: event.target.value })}
+                className="field"
+              />
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-sm font-semibold">Confirm new password</span>
+              <input
+                required
+                minLength={8}
+                type="password"
+                autoComplete="new-password"
+                value={password.confirm}
+                onChange={(event) => setPassword({ ...password, confirm: event.target.value })}
+                className="field"
+              />
+            </label>
+            {passwordError ? (
+              <p role="alert" className="text-sm text-destructive">
+                {passwordError}
+              </p>
+            ) : null}
+            <div className="flex gap-3">
+              <button disabled={savingPassword} type="submit" className="btn-primary flex-1">
+                {savingPassword ? "Updating…" : "Update password"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPasswordChange(false);
+                  setPassword({ next: "", confirm: "" });
+                }}
+                className="btn-secondary flex-1"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      ) : null}
     </AppShell>
   );
 }

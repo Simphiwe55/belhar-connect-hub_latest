@@ -1,6 +1,11 @@
 import type { ReactNode } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { Logo } from "./Logo";
+import { supabase } from "@/integrations/supabase/client";
+import { isProtectedRoute, type ProtectedRoute } from "@/lib/protected-routes";
+import { toast } from "sonner";
+
+type FooterLink = readonly [string, ProtectedRoute];
 
 export function SiteHeader() {
   return (
@@ -36,19 +41,23 @@ export function SiteFooter() {
         </div>
         <FooterCol
           title="For Community Members"
-          links={[
-            ["Post a job", "/member/post-job"],
-            ["My jobs", "/member/jobs"],
-            ["Member dashboard", "/member/dashboard"],
-          ]}
+          links={
+            [
+              ["Post a job", "/member/post-job"],
+              ["My jobs", "/member/jobs"],
+              ["Member dashboard", "/member/dashboard"],
+            ] satisfies FooterLink[]
+          }
         />
         <FooterCol
           title="For Workers"
-          links={[
-            ["Find jobs", "/worker/find-jobs"],
-            ["My applications", "/worker/applications"],
-            ["Earnings", "/earnings"],
-          ]}
+          links={
+            [
+              ["Find jobs", "/worker/find-jobs"],
+              ["My applications", "/worker/applications"],
+              ["Earnings", "/earnings"],
+            ] satisfies FooterLink[]
+          }
         />
       </div>
       <div className="border-t border-border py-5 text-center text-xs text-muted-foreground">
@@ -58,14 +67,39 @@ export function SiteFooter() {
   );
 }
 
-function FooterCol({ title, links }: { title: string; links: [string, string][] }) {
+function FooterCol({ title, links }: { title: string; links: FooterLink[] }) {
+  const navigate = useNavigate();
+
+  const openLink = async (event: React.MouseEvent<HTMLAnchorElement>, to: string) => {
+    event.preventDefault();
+    if (!isProtectedRoute(to)) {
+      toast.error("This destination is not available.");
+      return;
+    }
+    try {
+      const { data, error } = await supabase.auth.getUser();
+      if (error) throw error;
+      if (!data.user) {
+        navigate({ to: "/login", search: { next: to } });
+        return;
+      }
+      navigate({ to });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not verify your sign-in.");
+    }
+  };
+
   return (
     <div>
       <h4 className="text-sm font-semibold text-foreground">{title}</h4>
       <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
         {links.map(([label, to]) => (
           <li key={to}>
-            <Link to={to} className="hover:text-primary">
+            <Link
+              to={to}
+              onClick={(event) => void openLink(event, to)}
+              className="hover:text-primary"
+            >
               {label}
             </Link>
           </li>
@@ -79,7 +113,7 @@ export function MarketingLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <SiteHeader />
-      <main className="flex-1">{children}</main>
+      <main className="flex flex-1 flex-col">{children}</main>
       <SiteFooter />
     </div>
   );
