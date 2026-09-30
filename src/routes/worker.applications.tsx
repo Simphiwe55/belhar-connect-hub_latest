@@ -21,6 +21,13 @@ export const Route = createFileRoute("/worker/applications")({
 });
 
 type Tab = keyof typeof seedApplications;
+type DisplayApplication = {
+  id?: string;
+  job: string;
+  client: string;
+  budget: number;
+  when: string;
+};
 const tabs = Object.keys(seedApplications) as Tab[];
 
 function MyApplications() {
@@ -36,7 +43,12 @@ function MyApplications() {
       budget: job.budget,
       when: "Applied recently",
     }));
-  const list = tab === "Applied" ? [...persistedApplications, ...seedApplications.Applied] : seedApplications[tab];
+  const seededApplied = seedApplications.Applied.filter(
+    (application) => !persistedApplications.some((item) => item.job === application.job),
+  );
+  const list: DisplayApplication[] =
+    tab === "Applied" ? [...persistedApplications, ...seededApplied] : seedApplications[tab];
+  const appliedCount = new Set(list.map((application) => application.job)).size;
 
   return (
     <AppShell role="worker" title="My Applications" subtitle="Where each application stands">
@@ -51,7 +63,7 @@ function MyApplications() {
                 : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
-            {t} ({t === "Applied" ? persistedApplications.length + seedApplications.Applied.length : seedApplications[t].length})
+            {t} ({t === "Applied" ? appliedCount : seedApplications[t].length})
           </button>
         ))}
       </div>
@@ -59,7 +71,7 @@ function MyApplications() {
       <div className="space-y-3">
         {list.map((a) => (
           <div
-            key={"id" in a ? a.id : a.job}
+            key={a.id ?? a.job}
             className="card-surface grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 p-5"
           >
             <div className="min-w-0">
@@ -71,8 +83,12 @@ function MyApplications() {
             </div>
             <div className="shrink-0 text-right">
               <div className="font-display text-lg font-bold text-primary">{rand(a.budget)}</div>
-              {"id" in a ? (
-                <Link to="/worker/job/$jobId" params={{ jobId: a.id }} className="mr-3 text-xs font-semibold text-primary">
+              {a.id ? (
+                <Link
+                  to="/worker/job/$jobId"
+                  params={{ jobId: a.id }}
+                  className="mr-3 text-xs font-semibold text-primary"
+                >
                   View job
                 </Link>
               ) : null}

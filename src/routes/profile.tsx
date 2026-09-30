@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
 import { Stars, Tag } from "@/components/ui-kit";
@@ -9,6 +9,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/profile")({
+  validateSearch: (search: Record<string, unknown>): { edit?: true } =>
+    search["edit"] === true || search["edit"] === "true" ? { edit: true } : {},
   head: () => ({
     meta: [
       { title: "My Profile — Connectly" },
@@ -25,8 +27,10 @@ export const Route = createFileRoute("/profile")({
 
 function Profile() {
   const signOut = useSignOut();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { userId, email, profile, isLoading } = useProfile();
+  const { edit } = Route.useSearch();
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [showPasswordChange, setShowPasswordChange] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
@@ -35,6 +39,13 @@ function Profile() {
   const [profileSaveError, setProfileSaveError] = useState<string | null>(null);
   const [editData, setEditData] = useState({ name: "", email: "", phone: "", about: "" });
   const [password, setPassword] = useState({ new: "", confirm: "" });
+
+  useEffect(() => {
+    if (edit) {
+      setShowEditProfile(true);
+      navigate({ to: "/profile", search: {}, replace: true });
+    }
+  }, [edit, navigate]);
 
   useEffect(() => {
     if (profile) {
